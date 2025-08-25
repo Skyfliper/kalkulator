@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Кредитный калькулятор (UZ) — Hisob-kitob va ulashish</title>
+<style>
+  :root{
+    --bg:#0f1223;
+    --card:#111428;
+    --muted:#94a3b8;
+    --text:#e5e7eb;
+    --line:#1f2440;
+    --accent:#8b5cf6;       /* primary violet */
+    --accent-2:#f472b6;     /* pink */
+    --accent-3:#22d3ee;     /* cyan */
+    --ok:#22c55e;
+    --warn:#f59e0b;
+    --danger:#ef4444;
+    --shadow:0 14px 40px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:
+      radial-gradient(800px 400px at 10% -10%, rgba(139,92,246,.18), transparent 60%),
+      radial-gradient(800px 400px at 90% 110%, rgba(34,211,238,.15), transparent 60%),
+      var(--bg);
+    font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    color:var(--text);
+  }
+  .wrap{max-width:1080px; margin:32px auto; padding:0 16px}
+
+  .header{
+    display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;
+  }
+  .brand{display:flex; align-items:center; gap:12px; font-weight:900; font-size:22px; letter-spacing:.2px}
+  .logo{
+    width:40px; height:40px; border-radius:12px; color:#0b1022; display:grid; place-items:center;
+    font-weight:900;
+    background:conic-gradient(from 180deg, var(--accent), var(--accent-2), var(--accent-3), var(--accent));
+    box-shadow:0 10px 24px rgba(139,92,246,.35);
+  }
+
+  .grid{display:grid; grid-template-columns:1.1fr .9fr; gap:18px}
+  @media (max-width:980px){ .grid{grid-template-columns:1fr} }
+
+  .card{
+    background:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.01));
+    border:1px solid var(--line); border-radius:16px; padding:18px; box-shadow:var(--shadow); backdrop-filter: blur(8px);
+  }
+  .card h2{margin:0 0 12px; font-size:18px}
+
+  .field{margin-bottom:12px}
+  .label{
+    display:flex; align-items:center; justify-content:space-between; font-weight:800; font-size:13px; color:#c7d2fe; margin-bottom:6px;
+  }
+  .hint{color:var(--muted); font-weight:600; font-size:12px}
+  .control{
+    display:flex; align-items:center; gap:8px;
+    background:#0b0f22; border:1px solid var(--line); border-radius:12px; padding:12px 14px;
+  }
+  .control input, .control select{
+    width:100%; border:none; outline:none; background:transparent; font-size:16px; color:var(--text);
+    appearance:none;
+  }
+  .suffix, .prefix{color:#a5b4fc; font-weight:800; white-space:nowrap}
+
+  .row{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+  @media (max-width:680px){ .row{grid-template-columns:1fr} }
+
+  .actions{display:flex; gap:10px; flex-wrap:wrap; margin-top:8px}
+  .btn{
+    border:none; cursor:pointer; border-radius:12px; padding:11px 16px; font-weight:900; font-size:14px; letter-spacing:.2px;
+    background:linear-gradient(90deg, var(--accent), var(--accent-2)); color:#0b1022;
+    box-shadow:0 12px 26px rgba(139,92,246,.35); transition:.15s transform, .15s filter;
+  }
+  .btn:hover{transform:translateY(-1px); filter:saturate(1.1)}
+  .btn.secondary{
+    background:#141938; color:#cbd5e1; border:1px solid var(--line); box-shadow:none;
+  }
+  .btn.ghost{
+    background:transparent; color:#cbd5e1; border:1px dashed #2a315e; box-shadow:none;
+  }
+
+  .kpi{display:grid; grid-template-columns:repeat(2,1fr); gap:12px}
+  @media (max-width:980px){ .kpi{grid-template-columns:1fr 1fr} }
+  @media (max-width:560px){ .kpi{grid-template-columns:1fr} }
+  .tile{
+    background:linear-gradient(180deg, rgba(139,92,246,.15), rgba(34,211,238,.10));
+    border:1px solid #2a2f55; border-radius:14px; padding:14px;
+  }
+  .t2{ background:linear-gradient(180deg, rgba(244,114,182,.15), rgba(139,92,246,.08)); }
+  .t3{ background:linear-gradient(180deg, rgba(34,197,94,.12), rgba(34,211,238,.08)); }
+  .t4{ background:linear-gradient(180deg, rgba(245,158,11,.12), rgba(244,114,182,.06)); }
+
+  .tile .label{margin:0 0 6px; color:#cbd5e1}
+  .tile .value{font-size:22px; font-weight:900}
+  .sub{font-size:12px; color:var(--muted); margin-top:6px}
+
+  .error{
+    display:none; margin-top:10px; color:#fecaca; background:#7f1d1d; border:1px solid #dc2626; border-radius:10px; padding:10px 12px; font-weight:800;
+  }
+
+  /* Share card preview frame */
+  .share{
+    margin-top:16px; background:#0b0f22; border:1px solid var(--line); border-radius:16px; padding:14px;
+  }
+  .share-head{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
+  .share-title{font-weight:900; letter-spacing:.2px}
+  .share-img{
+    width:100%; aspect-ratio:1200/628; background:#0a0f22; border:1px solid #1e2446; border-radius:12px;
+    display:grid; place-items:center; overflow:hidden;
+  }
+  .share-img img{width:100%; height:100%; object-fit:cover}
+  .note{font-size:12px; color:var(--muted); margin-top:6px}
+
+  /* Amortization mini table */
+  table{width:100%; border-collapse:collapse; margin-top:10px}
+  th, td{border-bottom:1px dashed #27305c; padding:8px 6px; font-size:13px; text-align:right}
+  th:first-child, td:first-child{text-align:left}
+  th{color:#c7d2fe; font-weight:800}
+  td{color:#e2e8f0}
+
+  .badge{
+    display:inline-flex; align-items:center; gap:8px; font-weight:900; font-size:12px; color:#0b1022;
+    padding:6px 10px; border-radius:999px;
+    background:linear-gradient(90deg, var(--accent-3), var(--accent-2));
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="header">
+      <div class="brand"><div class="logo">₤</div>Кредитный калькулятор</div>
+      <div class="badge">Новый дизайн · Карточка для экспорта</div>
+    </div>
+
+    <div class="grid">
+      <!-- Ввод -->
+      <div class="card">
+        <h2>Параметры</h2>
+
+        <div class="field">
+          <div class="label">
+            <span>Сумма кредита</span>
+            <span class="hint">сум</span>
+          </div>
+          <div class="control">
+            <span class="prefix">UZS</span>
+            <input id="amount" type="text" inputmode="numeric" placeholder="50 000 000" value="5 000 000" />
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field">
+            <div class="label">
+              <span>Срок</span>
+              <span class="hint">мес</span>
+            </div>
+            <div class="control">
+              <input id="months" type="number" min="1" max="420" step="1" value="12" />
+              <span class="suffix">мес</span>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="label">
+              <span>Годовая процентная ставка</span>
+              <span class="hint">%</span>
+            </div>
+            <div class="control">
+              <input id="rate" type="number" min="0" max="100" step="0.1" value="24" />
+              <span class="suffix">%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="label">
+            <span>Тип платежа</span>
+            <span class="hint">аннуитет или дифференциал</span>
+          </div>
+          <div class="control">
+            <select id="ptype">
+              <option value="ann">Аннуитет</option>
+              <option value="dif">Дифференциал</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="calc" class="btn">Рассчитать</button>
+          <button id="reset" class="btn secondary">Сбросить</button>
+          <button id="quick12" class="btn ghost">12 мес · 24%</button>
+          <button id="quick24" class="btn ghost">24 мес · 30%</button>
+        </div>
+
+        <div id="err" class="error">Пожалуйста, проверьте значения: сумма > 0, срок ≥ 1 мес, ставка ≥ 0%</div>
+        <div class="note">Расчёт ориентировочный. Комиссии, страховка и штрафы не включены.</div>
+      </div>
+
+      <!-- Результаты -->
+      <div class="card">
+        <h2>Результаты</h2>
+        <div class="kpi">
+          <div class="tile t1">
+            <div class="label">Oylik to'lov</div>
+            <div id="out-monthly" class="value">—</div>
+            <div id="out-monthly-sub" class="sub"></div>
+          </div>
+          <div class="tile t2">
+            <div class="label">Umumiy to'lov</div>
+            <div id="out-total" class="value">—</div>
+            <div id="out-total-sub" class="sub"></div>
+          </div>
+          <div class="tile t3">
+            <div class="label">Foizlar yig'indisi</div>
+            <div id="out-interest" class="value">—</div>
+            <div id="out-interest-sub" class="sub"></div>
+          </div>
+          <div class="tile t4">
+            <div class="label">Oylik stavka</div>
+            <div id="out-mrate" class="value">—</div>
+            <div class="sub">Yillik stavka asosida</div>
+          </div>
+        </div>
+
+        <table id="mini">
+          <thead>
+            <tr>
+              <th>Месяц</th>
+              <th>Платёж</th>
+              <th>Основной долг</th>
+              <th>Проценты</th>
+              <th>Остаток</th>
+            </tr>
+          </thead>
+          <tbody id="mini-body"></tbody>
+        </table>
+        <div class="note">Показаны первые 3 месяца и последний месяц.</div>
+
+        <div class="share">
+          <div class="share-head">
+            <div class="share-title">Hisobot kartasi (ulashish uchun)</div>
+            <div class="actions">
+              <button id="make-img" class="btn secondary">Kartani yaratish</button>
+              <button id="copy-img" class="btn">Rasmga nusxa olish</button>
+              <button id="dl-img" class="btn ghost">PNG yuklab olish</button>
+            </div>
+          </div>
+          <div class="share-img">
+            <img id="share-preview" alt="Карточка отчёта" />
+          </div>
+          <div class="note">Готовое изображение подходит для мессенджеров.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+(function(){
+  const $ = (id) => document.getElementById(id);
+  const amountEl = $('amount');
+  const monthsEl = $('months');
+  const rateEl = $('rate');
+  const ptypeEl = $('ptype');
+  const errEl = $('err');
+
+  const outMonthly = $('out-monthly');
+  const outMonthlySub = $('out-monthly-sub');
+  const outInterest = $('out-interest');
+  const outInterestSub = $('out-interest-sub');
+  const outTotal = $('out-total');
+  const outTotalSub = $('out-total-sub');
+  const outMRate = $('out-mrate');
+  const miniBody = $('mini-body');
+
+  const sharePreview = $('share-preview');
+  const makeBtn = $('make-img');
+  const copyBtn = $('copy-img');
+  const dlBtn = $('dl-img');
+
+  const fmtSum = (n) => {
+    const v = Math.round(n);
+    return v.toLocaleString('uz-UZ') + " so'm";
+  };
+  const fmtPct = (p, digits=2) => (p.toFixed(digits).replace('.', ',')) + ' %';
+
+  function parseNum(v){
+    if(typeof v !== 'string') v = String(v ?? '');
+    v = v.replace(/\s+/g,'').replace(',', '.');
+    const n = parseFloat(v);
+    return isFinite(n) ? n : NaN;
+  }
+
+  function annuityMonthly(P, n, apr){
+    const r = apr/100/12;
+    if(r === 0) return P/n;
+    const k = Math.pow(1+r, n);
+    return P * r * k / (k - 1);
+  }
+
+  function differentialSchedule(P, n, apr){
+    // Returns array of {month, pay, principal, interest, balance}
+    const r = apr/100/12;
+    const principalPart = P / n;
+    let bal = P;
+    const rows = [];
+    for(let m=1; m<=n; m++){
+      const interest = bal * r;
+      const pay = principalPart + interest;
+      bal = Math.max(0, bal - principalPart);
+      rows.push({month:m, pay, principal:principalPart, interest, balance:bal});
+    }
+    return rows;
+  }
+
+  function buildMiniTable(rows){
+    // show first 3 and last 1
+    const n = rows.length;
+    const pick = [];
+    for(let i=0;i<Math.min(3,n);i++) pick.push(rows[i]);
+    if(n>3) pick.push({...rows[n-1], monthLabel: rows[n-1].month+' (yakuniy)'});
+    miniBody.innerHTML = pick.map((r,i)=>{
+      const label = r.monthLabel || r.month;
+      return `<tr>
+        <td>${label}</td>
+        <td>${fmtSum(r.pay)}</td>
+        <td>${fmtSum(r.principal)}</td>
+        <td>${fmtSum(r.interest)}</td>
+        <td>${fmtSum(r.balance)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  function calc(){
+    const P = parseNum(amountEl.value);
+    const n = parseInt(monthsEl.value, 10);
+    const apr = parseFloat(String(rateEl.value).replace(',', '.'));
+    const type = ptypeEl.value;
+
+    const valid = P > 0 && n >= 1 && apr >= 0;
+    if(!valid){
+      errEl.style.display = 'block';
+      outMonthly.textContent = '—';
+      outMonthlySub.textContent = '';
+      outInterest.textContent = '—';
+      outInterestSub.textContent = '';
+      outTotal.textContent = '—';
+      outTotalSub.textContent = '';
+      outMRate.textContent = '—';
+      miniBody.innerHTML = '';
+      return null;
+    }
+    errEl.style.display = 'none';
+
+    const mRate = apr/12;
+    outMRate.textContent = fmtPct(mRate, 3);
+
+    let monthly, total, overpay, rows;
+    if(type === 'ann'){
+      monthly = annuityMonthly(P, n, apr);
+      total = monthly * n;
+      overpay = total - P;
+
+      // Build annuity mini rows
+      rows = [];
+      let bal = P;
+      const r = apr/100/12;
+      for(let m=1; m<=n; m++){
+        const interest = bal * r;
+        const principal = monthly - interest;
+        bal = Math.max(0, bal - principal);
+        rows.push({month:m, pay:monthly, principal, interest, balance:bal});
+      }
+    }else{
+      rows = differentialSchedule(P, n, apr);
+      total = rows.reduce((s,x)=>s+x.pay,0);
+      overpay = total - P;
+      monthly = rows[0].pay; // first payment (largest)
+    }
+
+    outMonthly.textContent = fmtSum(monthly);
+    outMonthlySub.textContent = (ptypeEl.value==='dif')
+      ? "Differensial: birinchi oy maksimal"
+      : "Annuitet: har oy bir xil";
+
+    outTotal.textContent = fmtSum(total);
+    outTotalSub.textContent = `Muddati: ${n} oy`;
+
+    outInterest.textContent = fmtSum(overpay);
+    outInterestSub.textContent = `Ulush: ${(overpay/total*100).toFixed(1).replace('.', ',')} %`;
+
+    buildMiniTable(rows);
+
+    return {P, n, apr, type, monthly, total, overpay, rows, mRate};
+  }
+
+  function reset(){
+    amountEl.value = '5 000 000';
+    monthsEl.value = 12;
+    rateEl.value = 24;
+    ptypeEl.value = 'ann';
+    errEl.style.display = 'none';
+    calc();
+  }
+
+  // SHARE CARD (Canvas) — creates a 1200x628 image
+  function createShareCard(data){
+    const dpr = Math.min(2, window.devicePixelRatio || 1.5);
+    const W = 1200, H = 628;
+    const c = document.createElement('canvas');
+    c.width = Math.floor(W*dpr);
+    c.height = Math.floor(H*dpr);
+    c.style.width = W+'px'; c.style.height = H+'px';
+    const g = c.getContext('2d');
+    g.scale(dpr, dpr);
+
+    // Background gradient
+    const grad = g.createLinearGradient(0,0,W,H);
+    grad.addColorStop(0,'#0c1028');
+    grad.addColorStop(.5,'#1a1440');
+    grad.addColorStop(1,'#0b1230');
+    g.fillStyle = grad; g.fillRect(0,0,W,H);
+
+    // Glass card
+    const pad = 28;
+    const R = 22;
+    roundRect(g, pad, pad, W-2*pad, H-2*pad, R);
+    g.fillStyle = 'rgba(255,255,255,0.06)'; g.fill();
+    g.strokeStyle = 'rgba(120,120,200,0.35)'; g.lineWidth = 1.2; g.stroke();
+
+    // Header badge
+    drawBadge(g, pad+16, pad+20, "Kredit hisoboti", ['#22d3ee','#f472b6']);
+
+    // Branding
+    drawLogo(g, W - pad - 56, pad + 18);
+
+    // Title
+    g.fillStyle = '#e5e7eb';
+    g.font = '700 36px Inter, system-ui, sans-serif';
+    g.fillText('Natija', pad+16, pad+78);
+
+    // Divider
+    g.strokeStyle = 'rgba(130,140,200,.35)';
+    g.lineWidth = 1;
+    g.beginPath(); g.moveTo(pad+16, pad+90); g.lineTo(W-pad-16, pad+90); g.stroke();
+
+    // KPI blocks
+    const left = pad+16, top = pad+120, colW = (W - 2*pad - 32)/2, rowH = 110, gap = 16;
+
+    drawKPI(g, left, top, colW, rowH, "Oylik to'lov", fmtSum(data.monthly), data.type==='dif' ? "Differensial" : "Annuitet", '#8b5cf6');
+    drawKPI(g, left+colW+gap, top, colW, rowH, "Umumiy to'lov", fmtSum(data.total), `Muddati: ${data.n} oy`, '#22d3ee');
+    drawKPI(g, left, top+rowH+gap, colW, rowH, "Foizlar yig'indisi", fmtSum(data.overpay), `Ulush: ${(data.overpay/data.total*100).toFixed(1)}%`, '#f472b6');
+    drawKPI(g, left+colW+gap, top+rowH+gap, colW, rowH, "Oylik stavka", (data.apr/12).toFixed(3).replace('.', ',')+' %', `Yillik: ${data.apr}%`, '#f59e0b');
+
+    // Input summary
+    g.fillStyle = '#cbd5e1';
+    g.font = '800 16px Inter, system-ui, sans-serif';
+    g.fillText('Parametrlar', left, top+2*rowH+gap+64);
+    g.font = '600 16px Inter, system-ui, sans-serif';
+    g.fillText('Summasi: ' + fmtSum(data.P), left, top+2*rowH+gap+90);
+    g.fillText('Muddati: ' + data.n + ' oy', left, top+2*rowH+gap+114);
+    g.fillText("Stavka: " + data.apr.toFixed(2).replace('.', ',') + ' %', left, top+2*rowH+gap+138);
+
+    // Mini schedule: first 3 + last
+    const rows = data.rows;
+    const picks = rows.slice(0, Math.min(3, rows.length));
+    if(rows.length > 3) picks.push({...rows[rows.length-1], last:true});
+    const tblX = left+colW+gap, tblY = top+2*rowH+gap+64;
+    drawTable(g, tblX, tblY, [
+      {h:"Oy", w:60, align:'left'},
+      {h:"To'lov", w:160},
+      {h:"Asosiy", w:160},
+      {h:"Foiz", w:160},
+      {h:"Qoldiq", w:180},
+    ], picks);
+
+    // Footer note + timestamp
+    const ts = new Date().toLocaleString('uz-UZ');
+    g.fillStyle = 'rgba(200,210,230,.8)';
+    g.font = '600 14px Inter, system-ui, sans-serif';
+    g.fillText("Eslatma: hisob-kitob taxminiy, komissiya va qo'shimcha xarajatlar kiritilmagan.", pad+24, H - pad - 22);
+    g.textAlign = 'right';
+    g.fillText(ts, W - pad - 24, H - pad - 22);
+    g.textAlign = 'left';
+
+    return c;
+
+    // Helpers
+    function roundRect(ctx, x, y, w, h, r){
+      ctx.beginPath();
+      ctx.moveTo(x+r, y);
+      ctx.arcTo(x+w, y, x+w, y+h, r);
+      ctx.arcTo(x+w, y+h, x, y+h, r);
+      ctx.arcTo(x, y+h, x, y, r);
+      ctx.arcTo(x, y, x+w, y, r);
+      ctx.closePath();
+    }
+    function drawBadge(ctx, x, y, text, colors){
+      const padX = 12, padY = 6;
+      ctx.font = '900 14px Inter, system-ui, sans-serif';
+      const w = ctx.measureText(text).width + padX*2;
+      const h = 28;
+      const grd = ctx.createLinearGradient(x, y, x+w, y+h);
+      grd.addColorStop(0, colors[0]); grd.addColorStop(1, colors[1]);
+      ctx.fillStyle = grd;
+      roundRect(ctx, x, y, w, h, 999);
+      ctx.fill();
+      ctx.fillStyle = '#0b1022';
+      ctx.fillText(text, x+padX, y+19);
+    }
+    function drawLogo(ctx, x, y){
+      const r = 22;
+      const grd = ctx.createConicGradient(0, x+r, y+r);
+      grd.addColorStop(0, '#8b5cf6');
+      grd.addColorStop(.33, '#f472b6');
+      grd.addColorStop(.66, '#22d3ee');
+      grd.addColorStop(1, '#8b5cf6');
+      ctx.fillStyle = grd;
+      roundRect(ctx, x, y, 44, 44, 12); ctx.fill();
+      ctx.fillStyle = '#0b1022';
+      ctx.font = '900 18px Inter, system-ui, sans-serif';
+      ctx.fillText('UZ', x+10, y+26);
+    }
+    function drawKPI(ctx, x, y, w, h, label, value, sub, color){
+      // tile
+      ctx.fillStyle = 'rgba(255,255,255,.06)';
+      roundRect(ctx, x, y, w, h, 14); ctx.fill();
+      ctx.strokeStyle = 'rgba(150,160,220,.25)'; ctx.lineWidth = 1; ctx.stroke();
+
+      // left bar
+      const grd = ctx.createLinearGradient(x, y, x+w, y+h);
+      grd.addColorStop(0, color);
+      grd.addColorStop(1, 'rgba(255,255,255,.0)');
+      ctx.fillStyle = grd; roundRect(ctx, x, y, 5, h, 12); ctx.fill();
+
+      // texts
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = '800 16px Inter, system-ui, sans-serif';
+      ctx.fillText(label, x+16, y+26);
+
+      ctx.fillStyle = '#e5e7eb';
+      ctx.font = '900 28px Inter, system-ui, sans-serif';
+      ctx.fillText(value, x+16, y+60);
+
+      ctx.fillStyle = 'rgba(200,210,230,.8)';
+      ctx.font = '600 14px Inter, system-ui, sans-serif';
+      ctx.fillText(sub, x+16, y+84);
+    }
+    function drawTable(ctx, x, y, cols, rows){
+      // header
+      ctx.fillStyle = '#c7d2fe'; ctx.font = '800 14px Inter, system-ui, sans-serif';
+      let cx = x;
+      cols.forEach(col=>{
+        ctx.textAlign = col.align==='left' ? 'left' : 'right';
+        const tx = col.align==='left' ? cx : cx + col.w - 6;
+        ctx.fillText(col.h, tx, y);
+        cx += col.w;
+      });
+      // rows
+      ctx.fillStyle = '#e2e8f0'; ctx.font = '700 16px Inter, system-ui, sans-serif';
+      let ry = y + 28;
+      rows.forEach((r,i)=>{
+        let cx2 = x;
+        const label = (r.last ? (r.month + " (yakuniy)") : r.month);
+        const vals = [
+          {v: label, align: cols[0].align||'left'},
+          {v: fmtSum(r.pay)},
+          {v: fmtSum(r.principal)},
+          {v: fmtSum(r.interest)},
+          {v: fmtSum(r.balance)},
+        ];
+        vals.forEach((cell, idx)=>{
+          const col = cols[idx];
+          ctx.textAlign = (col.align==='left' || cell.align==='left') ? 'left' : 'right';
+          const tx = (col.align==='left' || cell.align==='left') ? cx2 : cx2 + col.w - 6;
+          ctx.fillText(cell.v, tx, ry);
+          cx2 += col.w;
+        });
+        ry += 26;
+      });
+    }
+  }
+
+  async function copyCanvasAsImage(canvas){
+    return new Promise((resolve, reject)=>{
+      canvas.toBlob(async (blob)=>{
+        if(!blob){ reject(new Error('Не удалось создать blob')); return; }
+        try{
+          if(navigator.clipboard && window.ClipboardItem){
+            const item = new ClipboardItem({ [blob.type]: blob });
+            await navigator.clipboard.write([item]);
+            resolve(true);
+          }else{
+            // Fallback: trigger download
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'kredit-hisoboti.png';
+            a.click();
+            URL.revokeObjectURL(a.href);
+            resolve(false);
+          }
+        }catch(e){ reject(e); }
+      }, 'image/png');
+    });
+  }
+
+  function downloadCanvas(canvas){
+    canvas.toBlob((blob)=>{
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'kredit-hisoboti.png';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }, 'image/png');
+  }
+
+  // Events
+  $('calc').addEventListener('click', calc);
+  $('reset').addEventListener('click', reset);
+  $('quick12').addEventListener('click', ()=>{ monthsEl.value = 12; rateEl.value = 24; calc(); });
+  $('quick24').addEventListener('click', ()=>{ monthsEl.value = 24; rateEl.value = 30; calc(); });
+
+  [amountEl, monthsEl, rateEl, ptypeEl].forEach(el=>{
+    el.addEventListener('input', ()=>{
+      const res = calc();
+      if(el === amountEl){
+        const raw = amountEl.value.replace(/[^\d,.\s]/g,'');
+        const num = parseNum(raw);
+        if(!isNaN(num)){
+          amountEl.value = Math.round(num).toLocaleString('uz-UZ');
+        }
+      }
+    });
+  });
+
+  let lastCanvas = null;
+  makeBtn.addEventListener('click', ()=>{
+    const data = calc();
+    if(!data) return;
+    lastCanvas = createShareCard(data);
+    sharePreview.src = lastCanvas.toDataURL('image/png');
+  });
+  copyBtn.addEventListener('click', async ()=>{
+    if(!lastCanvas){ makeBtn.click(); }
+    if(!lastCanvas) return;
+    try{
+      await copyCanvasAsImage(lastCanvas);
+      copyBtn.textContent = 'Nusxa olindi ✅';
+      setTimeout(()=>copyBtn.textContent='Rasmga nusxa olish', 1600);
+    }catch(e){
+      copyBtn.textContent = 'Xatolik ❌';
+      setTimeout(()=>copyBtn.textContent='Rasmga nusxa olish', 1600);
+    }
+  });
+  dlBtn.addEventListener('click', ()=>{
+    if(!lastCanvas){ makeBtn.click(); }
+    if(!lastCanvas) return;
+    downloadCanvas(lastCanvas);
+  });
+
+  // First calc & preview
+  const init = calc();
+  lastCanvas = createShareCard(init);
+  sharePreview.src = lastCanvas.toDataURL('image/png');
+})();
+</script>
+</body>
+</html>
